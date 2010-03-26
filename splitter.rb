@@ -102,7 +102,7 @@ class SplitterApp
     debug "Have #{@investigators_snps_map.investigators.size} investigators for #{@investigators_snps_map.snps.size} snps"
     
     @investigators_snps_map.investigators.sort.each do |i|
-      puts i
+      puts "'#{i}'"
     end
     
     prep_output_dirs()
@@ -143,7 +143,7 @@ class SplitterApp
   def load_snps_from_investigator_wb(wb)
     each_investigators_snps_from_wb(wb) do |investigators,snp|
       investigators.split(/,/).each do |investigator|
-        @investigators_snps_map.add(investigator.downcase.squeeze(" ").chomp,snp.downcase.squeeze(" ").chomp)
+        @investigators_snps_map.add(investigator.downcase.squeeze(" ").strip,snp.downcase.squeeze(" ").strip)
       end
     end
   end
