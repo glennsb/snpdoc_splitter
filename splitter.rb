@@ -60,7 +60,7 @@ class MsExcel
   require 'win32ole'
   
   def initialize
-    @app = WIN32OLE.new('Excel.Application','Quit')
+    @app = WIN32OLE.new('Excel.Application')
     @app.Visible = true
     @fso = WIN32OLE.new('Scripting.FileSystemObject')
     @workbooks = []
@@ -74,9 +74,9 @@ class MsExcel
   def create(file)
     number_of_sheets = @app.SheetsInNewWorkbook
     @app.SheetsInNewWorkbook = 1
-    @workbooks << @app.Workbooks.Add
-    @workbooks[-1].SaveAs(absolute_path(file))
+    @workbooks << @app.Workbooks.Add()
     @app.SheetsInNewWorkbook = number_of_sheets
+    @workbooks[-1].SaveAs(absolute_path(file))
     return @workbooks.size-1
   end
   
@@ -133,7 +133,7 @@ class SplitterApp
     output = {}
     @investigators_snps_map.investigators.each do |investigator|
       output[investigator] = {}
-      output[investigator][:file] = File.join(@output_dir,investigator,"#{input_file}.xlsx")      
+      output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator_}#{input_file}.xlsx")      
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
     end
