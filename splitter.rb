@@ -56,4 +56,66 @@ end
 #
 class MsExcel
   require 'win32ole'
+  
+  def initialize
+    @app = WIN32OLE.new('Excel.Application')
+  end
+end
+
+class SplitterApp
+  def initialize(args)
+    parse_args(args)
+    confirm_args()
+  end
+  
+  def run
+    
+  end
+  
+  :private
+  def parse_args(args)
+    @input_dir = args.shift
+    @output_dir = args.shift
+  end
+  
+  def confirm_args
+    check_input_dir()
+    check_output_dir()
+  end
+  
+  def check_input_dir
+    raise_usage "Missing an input directory" unless @input_dir
+    raise_usage "Not an input directory" unless File.directory?(@input_dir)
+    raise_usage "Input directory not readable" unless File.readable?(@input_dir)    
+  end
+  
+  def check_output_dir
+    raise_usage "Missing an output directory" unless @output_dir
+    if File.exists?(@output_dir)
+      if !File.directory?(@output_dir)
+        raise_usage "File already exists as output directory"
+      elsif !File.writable?(@output_dir)
+        raise_usage "Output directory is not writable"
+      elsif !Dir.empty?(@output_dir)
+        raise_usage "Output directory must be empty"
+      end
+    end
+  end
+  
+  def raise_usage(msg=nil)
+    STDERR.puts msg if msg
+    STDERR.puts usage
+    exit 1
+  end
+  
+  def usage()
+    <<-USAGE
+Usage: #{File.basename(__FILE__)} INPUT_DIRECTORY OUTPUT_DIRECTORY
+    USAGE
+  end
+  
+end
+
+if __FILE__ == $0
+  SplitterApp.new(ARGV).run()
 end
