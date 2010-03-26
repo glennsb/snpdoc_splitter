@@ -134,12 +134,23 @@ class SplitterApp
     files_in_dir("*.xlsx",@input_dir) do |input_file|
       input_wb = @excel.open(input_file)
       outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
-      # copy each input line to outputs
+      search_input_to_copy_to_outputs(@excel.sheet_of_workbook(1,input_wb),outputs)
       outputs.each do |key,values|
         @excel.close(values[:workbook],true)
       end
       @excel.close(input_wb)
     end
+  end
+
+  def search_input_to_copy_to_outputs(source_sheet,outputs)
+    (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
+      snp = source_sheet.Cell(row_index,1).Value.downcase.squeeze(" ").strip
+      investigators = @investigators_snps_map.investigators_for_snp(snp)
+      investigators.each do |inv|
+        outputs[inv]{:snp_added} += 1
+        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook])
+      end
+    end    
   end
   
   def prep_output_files_for_input(input_file,input_wb)
