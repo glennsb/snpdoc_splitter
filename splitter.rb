@@ -59,6 +59,25 @@ class MsExcel
   
   def initialize
     @app = WIN32OLE.new('Excel.Application')
+    @app.Visible = true
+    @fso = WIN32OLE.new('Scripting.FileSystemObject')
+    @workbooks = []
+  end
+  
+  def open(file)
+    @workbooks << @app.Workbooks.Open(absolute_path(file))
+    return @workbooks.size-1
+  end
+  
+  def close(wb_index,save=false)
+    return unless @workbooks[wb_index]
+    @workbooks[wb_index].Save if save
+    @workbooks[wb_index].Close
+  end
+  
+  :private
+  def absolute_path(file)
+    @fso.GetAbsolutePathName(file)
   end
 end
 
@@ -78,6 +97,19 @@ class SplitterApp
   :private
   def load_investigators_snps
     @investigators_snps_map = InvestigatorSnpMap.new()
+    files_in_dir("*.xls",@snp_select_dir) do |file|
+      debug("Loading SNP mappings from #{file}")
+      wb = @excel.open(file)
+      
+      debug("Closing #{wb}")
+      @excel.close(wb)
+    end
+  end
+  
+  def files_in_dir(pattern,dir,&block)
+    Dir.glob(File.join(dir,pattern)) do |file|
+      yield file
+    end
   end
   
   def confirm_args
@@ -115,6 +147,10 @@ class SplitterApp
     <<-USAGE
 Usage: #{File.basename(__FILE__)} INPUT_DIRECTORY SNP_SELECTION_DIRECTORY OUTPUT_DIRECTORY
     USAGE
+  end
+  
+  def debug(msg)
+    STDERR.puts "#{Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")}: #{msg}"
   end
   
 end
