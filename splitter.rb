@@ -144,11 +144,11 @@ class SplitterApp
 
   def search_input_to_copy_to_outputs(source_sheet,outputs)
     (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
-      snp = source_sheet.Cell(row_index,1).Value.downcase.squeeze(" ").strip
+      snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
       investigators = @investigators_snps_map.investigators_for_snp(snp)
       investigators.each do |inv|
-        outputs[inv]{:snp_added} += 1
-        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook])
+        outputs[inv][:snp_added] += 1
+        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]))
       end
     end    
   end
