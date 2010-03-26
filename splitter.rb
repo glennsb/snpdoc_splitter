@@ -126,7 +126,7 @@ class SplitterApp
       outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
       # copy each input line to outputs
       outputs.each do |key,values|
-        
+        @excel.close(values[:workbook],true)
       end
       @excel.close(input_wb)
     end
@@ -136,12 +136,19 @@ class SplitterApp
     input = @excel.sheet_of_workbook(1,input_wb)
     output = {}
     @investigators_snps_map.investigators.each do |investigator|
-      output[investigator] = {}
+      output[investigator] = {:snps_added => 0}
       output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
+      copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]))
     end
     output
+  end
+  
+  def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet)
+    (1..target_sheet.UsedRange.Columns.Count).each do |col_index|
+      target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
+    end
   end
   
   def prep_output_dirs()
