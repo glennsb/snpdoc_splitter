@@ -102,9 +102,19 @@ class SplitterApp
     debug "Have #{@investigators_snps_map.investigators.size} investigators for #{@investigators_snps_map.snps.size} snps"
     
     prep_output_dir()
+    
+    copy_input_to_output()
   end
   
   :private
+  def copy_input_to_output()
+    files_in_dir("*.xlsx",@input_dir) do |input_file|
+      input_wb = @excel.open(input_file)
+      
+      @excel.close(input_wb)
+    end
+  end
+  
   def prep_output_dir()
     FileUtils.mkdir(@output_dir) unless File.exists?(@output_dir)
   end
