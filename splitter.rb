@@ -125,6 +125,8 @@ class SplitterApp
     prep_output_dirs()
     
     copy_input_to_output()
+    
+    @excel.quit
   end
   
   :private
@@ -149,6 +151,10 @@ class SplitterApp
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
       copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]))
+      @excel.sheet_of_workbook(1,output[investigator][:workbook]).Rows(1).Font.Bold = true
+      @excel.sheet_of_workbook(1,output[investigator][:workbook]).AutoFilter()
+      @excel.sheet_of_workbook(1,output[investigator][:workbook]).Rows(1).AutoFit
+      @excel.sheet_of_workbook(1,output[investigator][:workbook]).Rows(1).Interior.ColorIndex = 6
     end
     output
   end
