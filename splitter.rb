@@ -69,12 +69,17 @@ class MsExcel
     return @workbooks.size-1
   end
   
-  def close(wb_index,save=false)
-    return unless @workbooks[wb_index]
-    @workbooks[wb_index].Save if save
-    @workbooks[wb_index].Close
+  def sheet_of_workbook(sheet,wb_index)
+    return @workbooks[wb_index].Worksheets(sheet)
   end
   
+  def close(wb_index,save=false)
+    # return unless @workbooks[wb_index]
+    @workbooks[wb_index].Save if save
+    @workbooks[wb_index].Close
+    @workbooks[wb_index] = nil
+  end
+
   :private
   def absolute_path(file)
     @fso.GetAbsolutePathName(file)
@@ -92,6 +97,11 @@ class SplitterApp
   def run
     @excel = MsExcel.new()
     load_investigators_snps()
+    
+    @investigators_snps_map.investigators.each do |i|
+      puts i
+    end
+    debug @investigators_snps_map.snps.size
   end
   
   :private
@@ -100,9 +110,28 @@ class SplitterApp
     files_in_dir("*.xls",@snp_select_dir) do |file|
       debug("Loading SNP mappings from #{file}")
       wb = @excel.open(file)
-      
-      debug("Closing #{wb}")
+      load_snps_from_investigator_wb(wb)
       @excel.close(wb)
+    end
+  end
+  
+  def load_snps_from_investigator_wb(wb)
+    each_investigators_snps_from_wb(wb) do |investigators,snp|
+      investigators.split(/,/).each do |investigator|
+        @investigators_snps_map.add(investigator.downcase,snp.downcase)
+      end
+    end
+  end
+  
+  def each_investigators_snps_from_wb(wb,&block)
+    investigators = nil
+    snp = nil
+    ws = @excel.sheet_of_workbook(1,wb)
+    debug("It has: #{ws.Rows.Count} rows or #{} #{ws.UsedRange.Count}")
+    (2..ws.UsedRange.Rows.Count).each do |row_index|
+      investigators = ws.Cells(row_index,1).Value
+      snp = ws.Cells(row_index,2).Value
+      yield investigators,snp
     end
   end
   
