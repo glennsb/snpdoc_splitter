@@ -147,7 +147,7 @@ class SplitterApp
       snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
       investigators = @investigators_snps_map.investigators_for_snp(snp)
       investigators.each do |inv|
-        outputs[inv][:snp_added] += 1
+        outputs[inv][:snps_added] += 1
         copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]))
       end
     end    
@@ -162,12 +162,16 @@ class SplitterApp
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
       copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]))
-      @excel.sheet_of_workbook(1,output[investigator][:workbook]).Rows(1).Font.Bold = true
-      @excel.sheet_of_workbook(1,output[investigator][:workbook]).AutoFilter()
-      @excel.sheet_of_workbook(1,output[investigator][:workbook]).Rows(1).AutoFit
-      @excel.sheet_of_workbook(1,output[investigator][:workbook]).Rows(1).Interior.ColorIndex = 6
+      set_header_style(@excel.sheet_of_workbook(1,output[investigator][:workbook]))
     end
     output
+  end
+  
+  def set_header_style(sheet)
+    sheet.Rows(1).Font.Bold = true
+    sheet.AutoFilter()
+    sheet.Rows(1).AutoFit
+    sheet.Rows(1).Interior.ColorIndex = 6
   end
   
   def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet)
