@@ -15,6 +15,18 @@ class InvestigatorSnpMap
     add_snp_to_investigator(snp,inv)
   end
   
+  def investigators
+    @investigators_snps.keys
+  end
+  
+  def snps
+    @snps_investigators.keys
+  end
+  
+  def investigators_for_snp(snp)
+    @snps_investigators[snp]
+  end
+  
   :private
   def add_investigator_to_snp(inv, snp)
     @snps_investigators[snp] || = []
