@@ -1,5 +1,17 @@
 #!/usr/bin/env ruby
 
+class Dir
+  def empty?
+    Dir.glob("#{ path }/*", File::FNM_DOTMATCH) do |e|
+      return false unless %w( . .. ).include?(File::basename(e))
+    end
+    return true
+  end
+  def self.empty? path
+    new(path).empty?
+  end
+end
+
 #
 # Just a mapper between Snp & Investigators
 #
