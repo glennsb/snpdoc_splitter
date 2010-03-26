@@ -60,7 +60,7 @@ class MsExcel
   require 'win32ole'
   
   def initialize
-    @app = WIN32OLE.new('Excel.Application')
+    @app = WIN32OLE.new('Excel.Application','Quit')
     @app.Visible = true
     @fso = WIN32OLE.new('Scripting.FileSystemObject')
     @workbooks = []
@@ -68,6 +68,15 @@ class MsExcel
   
   def open(file)
     @workbooks << @app.Workbooks.Open(absolute_path(file))
+    return @workbooks.size-1
+  end
+  
+  def create(file)
+    number_of_sheets = @app.SheetsInNewWorkbook
+    @app.SheetsInNewWorkbook = 1
+    @workbooks << @app.Workbooks.Add
+    @workbooks[-1].SaveAs(absolute_path(file))
+    @app.SheetsInNewWorkbook = number_of_sheets
     return @workbooks.size-1
   end
   
@@ -101,9 +110,9 @@ class SplitterApp
     load_investigators_snps()
     debug "Have #{@investigators_snps_map.investigators.size} investigators for #{@investigators_snps_map.snps.size} snps"
     
-    @investigators_snps_map.investigators.sort.each do |i|
-      puts "'#{i}'"
-    end
+    # @investigators_snps_map.investigators.sort.each do |i|
+    #   puts "'#{i}'"
+    # end
     
     prep_output_dirs()
     
@@ -114,13 +123,21 @@ class SplitterApp
   def copy_input_to_output()
     files_in_dir("*.xlsx",@input_dir) do |input_file|
       input_wb = @excel.open(input_file)
-      prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
+      outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
       @excel.close(input_wb)
     end
   end
   
   def prep_output_files_for_input(input_file,input_wb)
-    debug "Making new output dir in #{File.join(@output_dir,input_file)}"
+    input = @excel.sheet_of_workbook(1,input_wb)
+    output = {}
+    @investigators_snps_map.investigators.each do |investigator|
+      output[investigator] = {}
+      output[investigator][:file] = File.join(@output_dir,investigator,"#{input_file}.xlsx")      
+      debug "Making new file #{output[investigator][:file]}"      
+      output[investigator][:workbook] = @excel.create(output[investigator][:file])
+    end
+    output
   end
   
   def prep_output_dirs()
@@ -149,8 +166,6 @@ class SplitterApp
   end
   
   def each_investigators_snps_from_wb(wb,&block)
-    investigators = nil
-    snp = nil
     ws = @excel.sheet_of_workbook(1,wb)
     (2..ws.UsedRange.Rows.Count).each do |row_index|
       investigators = ws.Cells(row_index,1).Value
