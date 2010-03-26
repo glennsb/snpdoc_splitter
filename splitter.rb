@@ -29,7 +29,7 @@ class InvestigatorSnpMap
   
   :private
   def add_investigator_to_snp(inv, snp)
-    @snps_investigators[snp] || = []
+    @snps_investigators[snp] ||= []
     @snps_investigators[snp] << inv
   end
   
@@ -37,4 +37,11 @@ class InvestigatorSnpMap
     @investigators_snps[inv] ||= []
     @investigators_snps[inv] << snp
   end
+end
+
+#
+# Interact with Microsoft Excel
+#
+class MsExcel
+  require 'win32ole'
 end
