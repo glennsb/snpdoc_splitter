@@ -61,7 +61,7 @@ class MsExcel
   
   def initialize
     @app = WIN32OLE.new('Excel.Application')
-    @app.Visible = true
+    # @app.Visible = true
     @fso = WIN32OLE.new('Scripting.FileSystemObject')
     @workbooks = []
   end
@@ -89,6 +89,14 @@ class MsExcel
     @workbooks[wb_index].Save if save
     @workbooks[wb_index].Close
     @workbooks[wb_index] = nil
+  end
+  
+  def save_workbook(wb_index)
+    @workbooks[wb_index].Save
+  end
+  
+  def quit
+    @app.Quit
   end
 
   :private
@@ -146,7 +154,7 @@ class SplitterApp
   end
   
   def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet)
-    (1..target_sheet.UsedRange.Columns.Count).each do |col_index|
+    (1..source_sheet.UsedRange.Columns.Count).each do |col_index|
       target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
     end
   end
