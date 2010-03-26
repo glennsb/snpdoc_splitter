@@ -63,8 +63,9 @@ class MsExcel
 end
 
 class SplitterApp
-  def initialize(args)
-    parse_args(args)
+  def initialize(input,output)
+    @input_dir = input
+    @output_dir = output
     confirm_args()
   end
   
@@ -73,11 +74,6 @@ class SplitterApp
   end
   
   :private
-  def parse_args(args)
-    @input_dir = args.shift
-    @output_dir = args.shift
-  end
-  
   def confirm_args
     check_input_dir()
     check_output_dir()
@@ -117,5 +113,5 @@ Usage: #{File.basename(__FILE__)} INPUT_DIRECTORY OUTPUT_DIRECTORY
 end
 
 if __FILE__ == $0
-  SplitterApp.new(ARGV).run()
+  SplitterApp.new(ARGV.shift,ARGV.shift).run()
 end
