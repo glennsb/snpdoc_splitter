@@ -124,6 +124,10 @@ class SplitterApp
     files_in_dir("*.xlsx",@input_dir) do |input_file|
       input_wb = @excel.open(input_file)
       outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
+      # copy each input line to outputs
+      outputs.each do |key,values|
+        
+      end
       @excel.close(input_wb)
     end
   end
@@ -133,7 +137,7 @@ class SplitterApp
     output = {}
     @investigators_snps_map.investigators.each do |investigator|
       output[investigator] = {}
-      output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator_}#{input_file}.xlsx")      
+      output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
     end
