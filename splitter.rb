@@ -63,26 +63,33 @@ class MsExcel
 end
 
 class SplitterApp
-  def initialize(input,output)
+  def initialize(input,snp_select,output)
     @input_dir = input
+    @snp_select_dir = snp_select
     @output_dir = output
     confirm_args()
   end
   
   def run
-    
+    @excel = MsExcel.new()
+    load_investigators_snps()
   end
   
   :private
+  def load_investigators_snps
+    @investigators_snps_map = InvestigatorSnpMap.new()
+  end
+  
   def confirm_args
-    check_input_dir()
+    check_input_dir(@input_dir,"input")
+    check_input_dir(@snp_select_dir,"SNP selection dir")
     check_output_dir()
   end
   
-  def check_input_dir
-    raise_usage "Missing an input directory" unless @input_dir
-    raise_usage "Not an input directory" unless File.directory?(@input_dir)
-    raise_usage "Input directory not readable" unless File.readable?(@input_dir)    
+  def check_input_dir(dir,name)
+    raise_usage "Missing an #{name} directory" unless dir
+    raise_usage "Not an #{name} directory" unless File.directory?(dir)
+    raise_usage "#{name} directory not readable" unless File.readable?(dir)    
   end
   
   def check_output_dir
@@ -106,12 +113,12 @@ class SplitterApp
   
   def usage()
     <<-USAGE
-Usage: #{File.basename(__FILE__)} INPUT_DIRECTORY OUTPUT_DIRECTORY
+Usage: #{File.basename(__FILE__)} INPUT_DIRECTORY SNP_SELECTION_DIRECTORY OUTPUT_DIRECTORY
     USAGE
   end
   
 end
 
 if __FILE__ == $0
-  SplitterApp.new(ARGV.shift,ARGV.shift).run()
+  SplitterApp.new(ARGV.shift,ARGV.shift,ARGV.shift).run()
 end
