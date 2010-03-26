@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'FileUtils'
+
 class Dir
   def empty?
     Dir.glob("#{ path }/*", File::FNM_DOTMATCH) do |e|
@@ -97,14 +99,16 @@ class SplitterApp
   def run
     @excel = MsExcel.new()
     load_investigators_snps()
+    debug "Have #{@investigators_snps_map.investigators.size} investigators for #{@investigators_snps_map.snps.size} snps"
     
-    @investigators_snps_map.investigators.each do |i|
-      puts i
-    end
-    debug @investigators_snps_map.snps.size
+    prep_output_dir()
   end
   
   :private
+  def prep_output_dir()
+    FileUtils.mkdir(@output_dir) unless File.exists?(@output_dir)
+  end
+  
   def load_investigators_snps
     @investigators_snps_map = InvestigatorSnpMap.new()
     files_in_dir("*.xls",@snp_select_dir) do |file|
@@ -127,7 +131,6 @@ class SplitterApp
     investigators = nil
     snp = nil
     ws = @excel.sheet_of_workbook(1,wb)
-    debug("It has: #{ws.Rows.Count} rows or #{} #{ws.UsedRange.Count}")
     (2..ws.UsedRange.Rows.Count).each do |row_index|
       investigators = ws.Cells(row_index,1).Value
       snp = ws.Cells(row_index,2).Value
