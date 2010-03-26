@@ -101,7 +101,11 @@ class SplitterApp
     load_investigators_snps()
     debug "Have #{@investigators_snps_map.investigators.size} investigators for #{@investigators_snps_map.snps.size} snps"
     
-    prep_output_dir()
+    @investigators_snps_map.investigators.sort.each do |i|
+      puts i
+    end
+    
+    prep_output_dirs()
     
     copy_input_to_output()
   end
@@ -110,13 +114,20 @@ class SplitterApp
   def copy_input_to_output()
     files_in_dir("*.xlsx",@input_dir) do |input_file|
       input_wb = @excel.open(input_file)
-      
+      prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
       @excel.close(input_wb)
     end
   end
   
-  def prep_output_dir()
+  def prep_output_files_for_input(input_file,input_wb)
+    debug "Making new output dir in #{File.join(@output_dir,input_file)}"
+  end
+  
+  def prep_output_dirs()
     FileUtils.mkdir(@output_dir) unless File.exists?(@output_dir)
+    @investigators_snps_map.investigators.each do |i|
+      FileUtils.mkdir(File.join(@output_dir,i))
+    end
   end
   
   def load_investigators_snps
@@ -132,7 +143,7 @@ class SplitterApp
   def load_snps_from_investigator_wb(wb)
     each_investigators_snps_from_wb(wb) do |investigators,snp|
       investigators.split(/,/).each do |investigator|
-        @investigators_snps_map.add(investigator.downcase,snp.downcase)
+        @investigators_snps_map.add(investigator.downcase.squeeze(" ").chomp,snp.downcase.squeeze(" ").chomp)
       end
     end
   end
