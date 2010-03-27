@@ -161,7 +161,7 @@ class SplitterApp
     other_investigators = []
     (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
       snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
-      i_tmp = @investigators_snps_map.investigators_for_snp(snp)
+      i_tmp = @investigators_snps_map.investigators_for_snp(snp.split(/ merged/).first)
       if ! i_tmp or i_tmp.empty?
         debug "No investigators for '#{snp}'"
         next
