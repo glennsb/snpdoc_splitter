@@ -148,7 +148,9 @@ class SplitterApp
       investigators = @investigators_snps_map.investigators_for_snp(snp)
       investigators.each do |inv|
         outputs[inv][:snps_added] += 1
-        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]))
+        debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
+        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
+        return
       end
     end
   end
@@ -161,8 +163,8 @@ class SplitterApp
       output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
-      copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]))
-      set_header_style(@excel.sheet_of_workbook(1,output[investigator][:workbook]))
+      copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]),1)
+      # set_header_style(@excel.sheet_of_workbook(1,output[investigator][:workbook]))
     end
     output
   end
@@ -174,10 +176,16 @@ class SplitterApp
     sheet.Rows(1).Interior.ColorIndex = 6
   end
   
-  def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet)
-    (1..source_sheet.UsedRange.Columns.Count).each do |col_index|
-      target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
-    end
+  def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet,target_row=nil)
+    target_row ||= row
+    source_sheet.Rows(row).Copy
+    target_sheet.Select
+    target_sheet.Range("A#{target_row}:B#{target_row}").Select
+    # target_sheet.Range("B#{target_row}:C#{target_row}").Select
+    target_sheet.Paste
+    # (1..source_sheet.UsedRange.Columns.Count).each do |col_index|
+    #   target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
+    # end
   end
   
   def prep_output_dirs()
