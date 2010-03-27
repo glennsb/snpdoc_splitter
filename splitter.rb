@@ -146,18 +146,18 @@ class SplitterApp
   def copy_input_to_output()
     files_in_dir("*.xlsx",@input_dir) do |input_file|
       input_wb = @excel.open(input_file)
+      debug "Parsing #{input_file}"
       @investigators_snps_map.investigators.each do |inv|
-        outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb,inv)
-        search_input_to_copy_to_outputs(@excel.sheet_of_workbook(1,input_wb),outputs,inv)
-        outputs.each do |key,values|
-          @excel.close(values[:workbook],true)
-        end
+        output = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb,inv)
+        debug "\t to #{output[:file]}"
+        search_input_to_copy_to_outputs(@excel.sheet_of_workbook(1,input_wb),output,inv)
+        @excel.close(output[:workbook],true)
       end
       @excel.close(input_wb)
     end
   end
 
-  def search_input_to_copy_to_outputs(source_sheet,outputs,inv)
+  def search_input_to_copy_to_outputs(source_sheet,output,inv)
     other_investigators = []
     (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
       snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
@@ -169,28 +169,32 @@ class SplitterApp
       investigators = i_tmp.clone
       if investigators.delete(inv)
         other_investigators << investigators
-        outputs[inv][:snps_added] += 1
+        output[:snps_added] += 1
         # debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
-        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
+        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,output[:workbook]),output[:snps_added]+1)
       end
     end
-    # insert new leading column of other investigators
-    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Columns(1).Insert(MsExcel::XlToRight)
-    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(1,1).Value = "Other Contributors"
-    other_investigators.each_with_index do |investigators,row|
-      @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(2+row,1).Value = investigators.join(", ")
-    end
-    set_header_style(@excel.sheet_of_workbook(1,outputs[inv][:workbook]),source_sheet)
+
+    add_other_contribs_column(@excel.sheet_of_workbook(1,output[:workbook]),other_investigators)
+    set_header_style(@excel.sheet_of_workbook(1,output[:workbook]),source_sheet)
     
+  end
+  
+  def add_other_contribs_column(sheet,other_investigators)
+    sheet.Columns(1).Insert(MsExcel::XlToRight)
+    sheet.Cells(1,1).Value = "Other Contributors"
+    other_investigators.each_with_index do |investigators,row|
+      sheet.Cells(2+row,1).Value = investigators.join(", ")
+    end
+    sheet.Cells(1,1).Select
   end
   
   def prep_output_files_for_input(input_file,input_wb,investigator)
     input = @excel.sheet_of_workbook(1,input_wb)
-    output = {}
-    output[investigator] = {:snps_added => 0}
-    output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
-    output[investigator][:workbook] = @excel.create(output[investigator][:file])
-    copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]),1)
+    output = {:snps_added => 0}
+    output[:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
+    output[:workbook] = @excel.create(output[:file])
+    copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[:workbook]),1)
     output
   end
   
