@@ -150,7 +150,6 @@ class SplitterApp
         outputs.each do |key,values|
           @excel.close(values[:workbook],true)
         end
-        return
       end
       @excel.close(input_wb)
     end
@@ -174,6 +173,8 @@ class SplitterApp
     other_investigators.each_with_index do |investigators,row|
       @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(2+row,1).Value = investigators.join(", ")
     end
+    set_header_style(@excel.sheet_of_workbook(1,outputs[inv][:workbook]))
+    
   end
   
   def prep_output_files_for_input(input_file,input_wb,investigator)
@@ -191,10 +192,12 @@ class SplitterApp
   end
   
   def set_header_style(sheet)
-    sheet.Rows(1).Font.Bold = true
+    # sheet.Rows(1).Font.Bold = true
     sheet.AutoFilter()
     sheet.Rows(1).AutoFit
-    sheet.Rows(1).Interior.ColorIndex = 6
+    (1..ws.UsedRange.Columns.Count).each do |col_index|
+      sheet.Columns(col_index).AutoFit
+    end
   end
   
   def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet,target_row=nil)
