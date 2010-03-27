@@ -53,6 +53,7 @@ class InvestigatorSnpMap
   end
 end
 
+
 #
 # Interact with Microsoft Excel
 #
@@ -64,6 +65,11 @@ class MsExcel
     # @app.Visible = true
     @fso = WIN32OLE.new('Scripting.FileSystemObject')
     @workbooks = []
+    
+    # class MsExcelConst
+    # end
+    WIN32OLE.const_load(@app, self.class)
+    
   end
   
   def open(file)
@@ -99,11 +105,16 @@ class MsExcel
     @app.Quit
   end
 
+  def app
+    @app
+  end
+
   :private
   def absolute_path(file)
     @fso.GetAbsolutePathName(file)
   end
 end
+
 
 class SplitterApp
   def initialize(input,snp_select,output)
@@ -139,6 +150,7 @@ class SplitterApp
         outputs.each do |key,values|
           @excel.close(values[:workbook],true)
         end
+        return
       end
       @excel.close(input_wb)
     end
@@ -154,6 +166,7 @@ class SplitterApp
         copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
       end
     end
+    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Columns(1).Insert(MsExcel::XlToRight)
   end
   
   def prep_output_files_for_input(input_file,input_wb,investigator)
@@ -182,9 +195,11 @@ class SplitterApp
     source_sheet.Rows(row).Copy
     target_sheet.Select
     # target_sheet.Range("A#{target_row}:B#{target_row}").Select
-    target_sheet.Range("B#{target_row}:C#{target_row}").Select
+    # target_sheet.Range("B#{target_row}:C#{target_row}").Select
     target_sheet.Rows(target_row).Select
+    # target_sheet.Range(target_sheet.Rows(target_row).Address).offset(0,1).Select
     target_sheet.Paste
+    # target_sheet.Rows(target_row).Select
     # (1..source_sheet.UsedRange.Columns.Count).each do |col_index|
     #   target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
     # end
