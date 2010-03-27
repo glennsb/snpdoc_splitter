@@ -53,6 +53,7 @@ class InvestigatorSnpMap
   end
 end
 
+
 #
 # Interact with Microsoft Excel
 #
@@ -61,13 +62,27 @@ class MsExcel
   
   def initialize
     @app = WIN32OLE.new('Excel.Application')
-    @app.Visible = true
+    # @app.Visible = true
     @fso = WIN32OLE.new('Scripting.FileSystemObject')
     @workbooks = []
+    
+    # class MsExcelConst
+    # end
+    WIN32OLE.const_load(@app, self.class)
+    
   end
   
   def open(file)
     @workbooks << @app.Workbooks.Open(absolute_path(file))
+    return @workbooks.size-1
+  end
+  
+  def create(file)
+    number_of_sheets = @app.SheetsInNewWorkbook
+    @app.SheetsInNewWorkbook = 1
+    @workbooks << @app.Workbooks.Add()
+    @app.SheetsInNewWorkbook = number_of_sheets
+    @workbooks[-1].SaveAs(absolute_path(file))
     return @workbooks.size-1
   end
   
@@ -81,12 +96,25 @@ class MsExcel
     @workbooks[wb_index].Close
     @workbooks[wb_index] = nil
   end
+  
+  def save_workbook(wb_index)
+    @workbooks[wb_index].Save
+  end
+  
+  def quit
+    @app.Quit
+  end
+
+  def app
+    @app
+  end
 
   :private
   def absolute_path(file)
     @fso.GetAbsolutePathName(file)
   end
 end
+
 
 class SplitterApp
   def initialize(input,snp_select,output)
@@ -101,12 +129,97 @@ class SplitterApp
     load_investigators_snps()
     debug "Have #{@investigators_snps_map.investigators.size} investigators for #{@investigators_snps_map.snps.size} snps"
     
-    prep_output_dir()
+    # @investigators_snps_map.investigators.sort.each do |i|
+    #   puts "'#{i}'"
+    # end
+    
+    prep_output_dirs()
+    
+    copy_input_to_output()
+    
+    @excel.quit
+    
+    debug "Complete"
   end
   
   :private
-  def prep_output_dir()
+  def copy_input_to_output()
+    files_in_dir("*.xlsx",@input_dir) do |input_file|
+      input_wb = @excel.open(input_file)
+      @investigators_snps_map.investigators.each do |inv|
+        outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb,inv)
+        search_input_to_copy_to_outputs(@excel.sheet_of_workbook(1,input_wb),outputs,inv)
+        outputs.each do |key,values|
+          @excel.close(values[:workbook],true)
+        end
+      end
+      @excel.close(input_wb)
+    end
+  end
+
+  def search_input_to_copy_to_outputs(source_sheet,outputs,inv)
+    other_investigators = []
+    (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
+      snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
+      i_tmp = @investigators_snps_map.investigators_for_snp(snp)
+      if ! i_tmp or i_tmp.empty?
+        debug "No investigators for '#{snp}'"
+        next
+      end
+      investigators = i_tmp.clone
+      if investigators.delete(inv)
+        other_investigators << investigators
+        outputs[inv][:snps_added] += 1
+        # debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
+        copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
+      end
+    end
+    # insert new leading column of other investigators
+    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Columns(1).Insert(MsExcel::XlToRight)
+    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(1,1).Value = "Other Contributors"
+    other_investigators.each_with_index do |investigators,row|
+      @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(2+row,1).Value = investigators.join(", ")
+    end
+    set_header_style(@excel.sheet_of_workbook(1,outputs[inv][:workbook]))
+    
+  end
+  
+  def prep_output_files_for_input(input_file,input_wb,investigator)
+    input = @excel.sheet_of_workbook(1,input_wb)
+    output = {}
+    # @investigators_snps_map.investigators.each do |investigator|
+      output[investigator] = {:snps_added => 0}
+      output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
+      # debug "Making new file #{output[investigator][:file]}"      
+      output[investigator][:workbook] = @excel.create(output[investigator][:file])
+      copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]),1)
+      # set_header_style(@excel.sheet_of_workbook(1,output[investigator][:workbook]))
+    # end
+    output
+  end
+  
+  def set_header_style(sheet)
+    # sheet.Rows(1).Font.Bold = true
+    sheet.AutoFilter()
+    sheet.Rows(1).AutoFit
+    (1..sheet.UsedRange.Columns.Count).each do |col_index|
+      sheet.Columns(col_index).AutoFit
+    end
+  end
+  
+  def copy_row_from_sheet_to_sheet(row,source_sheet,target_sheet,target_row=nil)
+    target_row ||= row
+    source_sheet.Rows(row).Copy
+    target_sheet.Select
+    target_sheet.Rows(target_row).Select
+    target_sheet.Paste
+  end
+  
+  def prep_output_dirs()
     FileUtils.mkdir(@output_dir) unless File.exists?(@output_dir)
+    @investigators_snps_map.investigators.each do |i|
+      FileUtils.mkdir(File.join(@output_dir,i))
+    end
   end
   
   def load_investigators_snps
@@ -122,14 +235,12 @@ class SplitterApp
   def load_snps_from_investigator_wb(wb)
     each_investigators_snps_from_wb(wb) do |investigators,snp|
       investigators.split(/,/).each do |investigator|
-        @investigators_snps_map.add(investigator.downcase,snp.downcase)
+        @investigators_snps_map.add(investigator.downcase.squeeze(" ").strip,snp.downcase.squeeze(" ").strip)
       end
     end
   end
   
   def each_investigators_snps_from_wb(wb,&block)
-    investigators = nil
-    snp = nil
     ws = @excel.sheet_of_workbook(1,wb)
     (2..ws.UsedRange.Rows.Count).each do |row_index|
       investigators = ws.Cells(row_index,1).Value
