@@ -150,7 +150,7 @@ class SplitterApp
         outputs[inv][:snps_added] += 1
         copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]))
       end
-    end    
+    end
   end
   
   def prep_output_files_for_input(input_file,input_wb)
