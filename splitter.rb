@@ -157,16 +157,23 @@ class SplitterApp
   end
 
   def search_input_to_copy_to_outputs(source_sheet,outputs,inv)
+    other_investigators = []
     (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
       snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
-      investigators = @investigators_snps_map.investigators_for_snp(snp)
-      if investigators.include?(inv)
+      investigators = @investigators_snps_map.investigators_for_snp(snp).clone
+      if investigators.delete(inv)
+        other_investigators << investigators
         outputs[inv][:snps_added] += 1
         debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
         copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
       end
     end
+    # insert new leading column of other investigators
     @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Columns(1).Insert(MsExcel::XlToRight)
+    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(1,1).Value = "Contributors"
+    other_investigators.each_with_index do |investigators,row|
+      @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(2+row,1).Value = investigators.join(", ")
+    end
   end
   
   def prep_output_files_for_input(input_file,input_wb,investigator)
@@ -194,15 +201,8 @@ class SplitterApp
     target_row ||= row
     source_sheet.Rows(row).Copy
     target_sheet.Select
-    # target_sheet.Range("A#{target_row}:B#{target_row}").Select
-    # target_sheet.Range("B#{target_row}:C#{target_row}").Select
     target_sheet.Rows(target_row).Select
-    # target_sheet.Range(target_sheet.Rows(target_row).Address).offset(0,1).Select
     target_sheet.Paste
-    # target_sheet.Rows(target_row).Select
-    # (1..source_sheet.UsedRange.Columns.Count).each do |col_index|
-    #   target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
-    # end
   end
   
   def prep_output_dirs()
