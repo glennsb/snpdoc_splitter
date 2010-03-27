@@ -169,7 +169,7 @@ class SplitterApp
     end
     # insert new leading column of other investigators
     @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Columns(1).Insert(MsExcel::XlToRight)
-    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(1,1).Value = "Contributors"
+    @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(1,1).Value = "Other Contributors"
     other_investigators.each_with_index do |investigators,row|
       @excel.sheet_of_workbook(1,outputs[inv][:workbook]).Cells(2+row,1).Value = investigators.join(", ")
     end
@@ -195,7 +195,7 @@ class SplitterApp
     # sheet.Rows(1).Font.Bold = true
     sheet.AutoFilter()
     sheet.Rows(1).AutoFit
-    (1..ws.UsedRange.Columns.Count).each do |col_index|
+    (1..sheet.UsedRange.Columns.Count).each do |col_index|
       sheet.Columns(col_index).AutoFit
     end
   end
