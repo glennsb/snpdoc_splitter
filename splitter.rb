@@ -138,6 +138,8 @@ class SplitterApp
     copy_input_to_output()
     
     @excel.quit
+    
+    debug "Complete"
   end
   
   :private
@@ -159,11 +161,16 @@ class SplitterApp
     other_investigators = []
     (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
       snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
-      investigators = @investigators_snps_map.investigators_for_snp(snp).clone
+      i_tmp = @investigators_snps_map.investigators_for_snp(snp)
+      if ! i_tmp or i_tmp.empty?
+        debug "No investigators for '#{snp}'"
+        next
+      end
+      investigators = i_tmp.clone
       if investigators.delete(inv)
         other_investigators << investigators
         outputs[inv][:snps_added] += 1
-        debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
+        # debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
         copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
       end
     end
@@ -183,7 +190,7 @@ class SplitterApp
     # @investigators_snps_map.investigators.each do |investigator|
       output[investigator] = {:snps_added => 0}
       output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
-      debug "Making new file #{output[investigator][:file]}"      
+      # debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
       copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]),1)
       # set_header_style(@excel.sheet_of_workbook(1,output[investigator][:workbook]))
