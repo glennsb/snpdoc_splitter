@@ -133,39 +133,40 @@ class SplitterApp
   def copy_input_to_output()
     files_in_dir("*.xlsx",@input_dir) do |input_file|
       input_wb = @excel.open(input_file)
-      outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb)
-      search_input_to_copy_to_outputs(@excel.sheet_of_workbook(1,input_wb),outputs)
-      outputs.each do |key,values|
-        @excel.close(values[:workbook],true)
+      @investigators_snps_map.investigators.each do |inv|
+        outputs = prep_output_files_for_input(File.basename(input_file,".xlsx"),input_wb,inv)
+        search_input_to_copy_to_outputs(@excel.sheet_of_workbook(1,input_wb),outputs,inv)
+        outputs.each do |key,values|
+          @excel.close(values[:workbook],true)
+        end
       end
       @excel.close(input_wb)
     end
   end
 
-  def search_input_to_copy_to_outputs(source_sheet,outputs)
+  def search_input_to_copy_to_outputs(source_sheet,outputs,inv)
     (2..source_sheet.UsedRange.Rows.Count).each do |row_index|
       snp = source_sheet.Cells(row_index,1).Value.downcase.squeeze(" ").strip
       investigators = @investigators_snps_map.investigators_for_snp(snp)
-      investigators.each do |inv|
+      if investigators.include?(inv)
         outputs[inv][:snps_added] += 1
         debug "Will add #{snp} from #{row_index} to #{outputs[inv][:snps_added]+1} for #{inv}"
         copy_row_from_sheet_to_sheet(row_index,source_sheet,@excel.sheet_of_workbook(1,outputs[inv][:workbook]),outputs[inv][:snps_added]+1)
-        return
       end
     end
   end
   
-  def prep_output_files_for_input(input_file,input_wb)
+  def prep_output_files_for_input(input_file,input_wb,investigator)
     input = @excel.sheet_of_workbook(1,input_wb)
     output = {}
-    @investigators_snps_map.investigators.each do |investigator|
+    # @investigators_snps_map.investigators.each do |investigator|
       output[investigator] = {:snps_added => 0}
       output[investigator][:file] = File.join(@output_dir,investigator,"#{investigator}_#{input_file}.xlsx")      
       debug "Making new file #{output[investigator][:file]}"      
       output[investigator][:workbook] = @excel.create(output[investigator][:file])
       copy_row_from_sheet_to_sheet(1,@excel.sheet_of_workbook(1,input_wb),@excel.sheet_of_workbook(1,output[investigator][:workbook]),1)
       # set_header_style(@excel.sheet_of_workbook(1,output[investigator][:workbook]))
-    end
+    # end
     output
   end
   
@@ -180,8 +181,9 @@ class SplitterApp
     target_row ||= row
     source_sheet.Rows(row).Copy
     target_sheet.Select
-    target_sheet.Range("A#{target_row}:B#{target_row}").Select
-    # target_sheet.Range("B#{target_row}:C#{target_row}").Select
+    # target_sheet.Range("A#{target_row}:B#{target_row}").Select
+    target_sheet.Range("B#{target_row}:C#{target_row}").Select
+    target_sheet.Rows(target_row).Select
     target_sheet.Paste
     # (1..source_sheet.UsedRange.Columns.Count).each do |col_index|
     #   target_sheet.Cells(row,col_index).Value = source_sheet.Cells(row,col_index).Value
